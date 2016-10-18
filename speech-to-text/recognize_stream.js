@@ -82,6 +82,9 @@ RecognizeStream.prototype.initialize = function() {
 
   var closingMessage = {action: 'stop'};
 
+  var noopMessage = {action: 'no-op'};
+  var noopInterval = null;
+  var noopDelay = 20000; // 20 seconds
 
   var self = this;
 
@@ -98,8 +101,20 @@ RecognizeStream.prototype.initialize = function() {
         self.socket.send(JSON.stringify(closingMessage));
       });
     }
+
+    noopInterval = setInterval(sendNoop, noopDelay);
   });
 
+  function sendNoop() {
+    if (self.socket && self.socket.readyState === W3CWebSocket.OPEN) {
+      self.socket.send(JSON.stringify(noopMessage));
+    } else {
+      this.once('connect', function () {
+        self.socket.send(JSON.stringify(noopMessage));
+      });
+    }
+  }
+  
   socket.onerror = function(error) {
     self.listening = false;
     self.emit('error', error);
@@ -136,6 +151,7 @@ RecognizeStream.prototype.initialize = function() {
   }
 
   socket.onmessage = function(frame) {
+    clearInterval(noopInterval);
     if (typeof frame.data !== 'string') {
       return emitError('Unexpected binary data received from server', frame);
     }
