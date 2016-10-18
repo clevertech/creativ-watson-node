@@ -186,7 +186,7 @@ RecognizeStream.prototype.initialize = function() {
       self.emit('results', data);
 
       // Clear the noop interval if one existed, if we're not expecting interim results.
-      if(this.options['interim_results'] === false) {
+      if(self.options['interim_results'] === false) {
         clearInterval(noopInterval);
       }
 
