@@ -114,7 +114,7 @@ RecognizeStream.prototype.initialize = function() {
       });
     }
   }
-  
+
   socket.onerror = function(error) {
     self.listening = false;
     self.emit('error', error);
@@ -129,6 +129,10 @@ RecognizeStream.prototype.initialize = function() {
   this.socket.onclose = function(e) {
     self.listening = false;
     self.push(null);
+    
+    // Clear the interval that sends no-op, in case it still exists.
+    clearInterval(noopInterval);
+
     /**
      * @event RecognizeStream#close
      * @param {Number} reasonCode
@@ -151,7 +155,6 @@ RecognizeStream.prototype.initialize = function() {
   }
 
   socket.onmessage = function(frame) {
-    clearInterval(noopInterval);
     if (typeof frame.data !== 'string') {
       return emitError('Unexpected binary data received from server', frame);
     }
@@ -181,6 +184,12 @@ RecognizeStream.prototype.initialize = function() {
        * @param {Object} results
        */
       self.emit('results', data);
+
+      // Clear the noop interval if one existed, if we're not expecting interim results.
+      if(this.options['interim_results'] === false) {
+        clearInterval(noopInterval);
+      }
+
       // note: currently there is always either no entries or exactly 1 entry in the results array. However, this may change in the future.
       if (data.results[0] && data.results[0].final && data.results[0].alternatives) {
         /**
